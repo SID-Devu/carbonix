@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Projects{% endblock %}
+{% block page_title %}Project Explorer{% endblock %}
+{% block page_subtitle %}AI-verified carbon offset projects worldwide{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="flex items-center gap-3 mb-6">
+  <button onclick="filterType('all')" class="filter-btn active px-3 py-1.5 text-xs rounded-lg bg-brand-600/15 text-brand-400 border border-brand-600/30 font-medium transition-colors">All Projects</button>
+  <button onclick="filterType('Forest Conservation')" class="filter-btn px-3 py-1.5 text-xs rounded-lg bg-surface-2 text-gray-400 border border-gray-700 font-medium hover:text-gray-200 transition-colors">Forest</button>
+  <button onclick="filterType('Renewable Energy')" class="filter-btn px-3 py-1.5 text-xs rounded-lg bg-surface-2 text-gray-400 border border-gray-700 font-medium hover:text-gray-200 transition-colors">Renewable</button>
+  <button onclick="filterType('Wetland Restoration')" class="filter-btn px-3 py-1.5 text-xs rounded-lg bg-surface-2 text-gray-400 border border-gray-700 font-medium hover:text-gray-200 transition-colors">Wetland</button>
+  <button onclick="filterType('Carbon Removal')" class="filter-btn px-3 py-1.5 text-xs rounded-lg bg-surface-2 text-gray-400 border border-gray-700 font-medium hover:text-gray-200 transition-colors">CDR</button>
+  <button onclick="filterType('Blue Carbon')" class="filter-btn px-3 py-1.5 text-xs rounded-lg bg-surface-2 text-gray-400 border border-gray-700 font-medium hover:text-gray-200 transition-colors">Blue Carbon</button>
+  <div class="flex-1"></div>
+  <div class="flex items-center gap-2 text-xs text-gray-500">
+    <span class="w-2 h-2 rounded-full bg-brand-500"></span>
+    {{ projects|selectattr('satellite_status','eq','verified')|list|length }} verified
+    <span class="w-2 h-2 rounded-full bg-yellow-500 ml-2"></span>
+    {{ projects|rejectattr('satellite_status','eq','verified')|list|length }} flagged
+  </div>
+</div>
+
+<!-- Project Grid -->
+<div class="grid grid-cols-2 gap-4" id="project-grid">
+  {% for p in projects %}
+  <a href="/project/{{ p.id }}" class="project-card group block bg-surface-1 border border-gray-800 rounded-xl overflow-hidden hover:border-gray-600 transition-all" data-type="{{ p.type }}">
+    <!-- Color bar at top -->
+    <div class="h-1 {% if p.rating == 'AAA' %}bg-emerald-500{% elif p.rating == 'AA' %}bg-teal-500{% elif p.rating == 'A' %}bg-blue-500{% else %}bg-amber-500{% endif %}"></div>
+    <div class="p-5">
+      <div class="flex items-start justify-between mb-3">
+        <div class="flex-1 min-w-0 mr-3">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="rating-{{ p.rating|lower }} text-[10px] font-bold text-white px-2 py-0.5 rounded-md">{{ p.rating }}</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-md bg-surface-3 text-gray-400 font-medium">{{ p.type }}</span>
+          </div>
+          <h3 class="text-base font-semibold text-gray-200 group-hover:text-white transition-colors truncate">{{ p.name }}</h3>
+          <p class="text-xs text-gray-500 mt-0.5">{{ p.country }} · {{ p.region }}</p>
+        </div>
+        <div class="text-right flex-shrink-0">
+          <p class="text-xl font-bold text-white">${{ "%.2f"|format(p.price_per_ton) }}</p>
+          <p class="text-[10px] text-gray-500">per tCO2</p>
+        </div>
+      </div>
+
+      <p class="text-xs text-gray-400 line-clamp-2 mb-4">{{ p.description }}</p>
+
+      <!-- Metrics bar -->
+      <div class="grid grid-cols-4 gap-3 pt-3 border-t border-gray-800/50">
+        <div>
+          <p class="text-[10px] text-gray-500 font-medium">Available</p>
+          <p class="text-sm font-semibold text-gray-200">{{ "{:,}".format(p.credits_available) }}</p>
+        </div>
+        <div>
+          <p class="text-[10px] text-gray-500 font-medium">Score</p>
+          <p class="text-sm font-semibold {% if p.score >= 90 %}text-emerald-400{% elif p.score >= 80 %}text-teal-400{% elif p.score >= 70 %}text-blue-400{% else %}text-amber-400{% endif %}">{{ p.score }}/100</p>
+        </div>
+        <div>
+          <p class="text-[10px] text-gray-500 font-medium">Vintage</p>
+          <p class="text-sm font-semibold text-gray-200">{{ p.vintage }}</p>
+        </div>
+        <div>
+          <p class="text-[10px] text-gray-500 font-medium">Satellite</p>
+          <div class="flex items-center gap-1 mt-0.5">
+            {% if p.satellite_status == 'verified' %}
+            <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
+            <span class="text-xs text-brand-400 font-medium">OK</span>
+            {% elif p.satellite_status == 'flagged' %}
+            <span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+            <span class="text-xs text-yellow-400 font-medium">Flag</span>
+            {% else %}
+            <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+            <span class="text-xs text-orange-400 font-medium">Review</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Tags -->
+      <div class="flex gap-1.5 mt-3">
+        {% for tag in p.tags %}
+        <span class="px-2 py-0.5 rounded text-[10px] bg-surface-2 text-gray-500 font-medium">{{ tag }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+window.filterType = function(type) {
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.remove('active', 'bg-brand-600/15', 'text-brand-400', 'border-brand-600/30');
+    b.classList.add('bg-surface-2', 'text-gray-400', 'border-gray-700');
+  });
+  event.target.classList.add('active', 'bg-brand-600/15', 'text-brand-400', 'border-brand-600/30');
+  event.target.classList.remove('bg-surface-2', 'text-gray-400', 'border-gray-700');
+
+  document.querySelectorAll('.project-card').forEach(card => {
+    if (type === 'all' || card.dataset.type === type) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+};
+</script>
+{% endblock %}

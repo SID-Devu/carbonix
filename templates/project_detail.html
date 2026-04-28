@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}{{ project.name }}{% endblock %}
+{% block page_title %}{{ project.name }}{% endblock %}
+{% block page_subtitle %}{{ project.type }} · {{ project.country }}{% endblock %}
+
+{% block content %}
+<a href="/projects" class="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors mb-6">
+  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+  Back to Projects
+</a>
+
+<!-- Header card -->
+<div class="bg-surface-1 border border-gray-800 rounded-xl p-6 mb-6">
+  <div class="flex items-start justify-between">
+    <div>
+      <div class="flex items-center gap-3 mb-2">
+        <span class="rating-{{ project.rating|lower }} text-sm font-bold text-white px-3 py-1 rounded-lg">{{ project.rating }}</span>
+        <span class="text-sm px-3 py-1 rounded-lg bg-surface-3 text-gray-400 font-medium">{{ project.type }}</span>
+        {% if project.satellite_status == 'verified' %}
+        <span class="flex items-center gap-1.5 text-sm px-3 py-1 rounded-lg bg-brand-600/15 text-brand-400 font-medium">
+          <span class="w-2 h-2 rounded-full bg-brand-500 pulse-dot"></span> Satellite Verified
+        </span>
+        {% elif project.satellite_status == 'flagged' %}
+        <span class="flex items-center gap-1.5 text-sm px-3 py-1 rounded-lg bg-yellow-600/15 text-yellow-400 font-medium">
+          <span class="w-2 h-2 rounded-full bg-yellow-500"></span> Flagged for Review
+        </span>
+        {% else %}
+        <span class="flex items-center gap-1.5 text-sm px-3 py-1 rounded-lg bg-orange-600/15 text-orange-400 font-medium">
+          <span class="w-2 h-2 rounded-full bg-orange-500"></span> Under Review
+        </span>
+        {% endif %}
+      </div>
+      <h1 class="text-2xl font-bold text-white">{{ project.name }}</h1>
+      <p class="text-sm text-gray-400 mt-1">{{ project.country }} · {{ project.region }} · Methodology: {{ project.methodology }}</p>
+    </div>
+    <div class="text-right">
+      <p class="text-3xl font-bold text-white">${{ "%.2f"|format(project.price_per_ton) }}</p>
+      <p class="text-xs text-gray-500">per tCO2e</p>
+      <button class="mt-3 px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-lg transition-colors">
+        Buy Credits
+      </button>
+    </div>
+  </div>
+  <p class="text-sm text-gray-400 mt-4 leading-relaxed">{{ project.description }}</p>
+</div>
+
+<!-- Stats Grid -->
+<div class="grid grid-cols-5 gap-4 mb-6">
+  <div class="bg-surface-1 border border-gray-800 rounded-xl p-4 text-center">
+    <p class="text-2xl font-bold text-white">{{ project.score }}<span class="text-sm text-gray-500">/100</span></p>
+    <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Quality Score</p>
+  </div>
+  <div class="bg-surface-1 border border-gray-800 rounded-xl p-4 text-center">
+    <p class="text-2xl font-bold text-brand-400">{{ "{:,}".format(project.credits_available) }}</p>
+    <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Credits Available</p>
+  </div>
+  <div class="bg-surface-1 border border-gray-800 rounded-xl p-4 text-center">
+    <p class="text-2xl font-bold text-gray-300">{{ "{:,}".format(project.credits_retired) }}</p>
+    <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Credits Retired</p>
+  </div>
+  <div class="bg-surface-1 border border-gray-800 rounded-xl p-4 text-center">
+    <p class="text-2xl font-bold text-white">{{ "{:,}".format(project.area_hectares) }}</p>
+    <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Hectares</p>
+  </div>
+  <div class="bg-surface-1 border border-gray-800 rounded-xl p-4 text-center">
+    <p class="text-2xl font-bold text-white">{{ project.vintage }}</p>
+    <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Vintage</p>
+  </div>
+</div>
+
+<!-- Two columns: Verification + Credit Supply -->
+<div class="grid grid-cols-2 gap-4 mb-6">
+  <!-- AI Verification Panel -->
+  <div class="bg-surface-1 border border-gray-800 rounded-xl p-5">
+    <h3 class="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+      <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      AI Verification Report
+    </h3>
+    <div class="space-y-3">
+      <div class="flex items-center justify-between p-3 rounded-lg bg-surface-2/50">
+        <span class="text-xs text-gray-400">Satellite Analysis</span>
+        {% if project.satellite_status == 'verified' %}
+        <span class="text-xs text-brand-400 font-semibold">PASS</span>
+        {% else %}
+        <span class="text-xs text-yellow-400 font-semibold">REVIEW</span>
+        {% endif %}
+      </div>
+      <div class="flex items-center justify-between p-3 rounded-lg bg-surface-2/50">
+        <span class="text-xs text-gray-400">Additionality Check</span>
+        <span class="text-xs text-brand-400 font-semibold">PASS</span>
+      </div>
+      <div class="flex items-center justify-between p-3 rounded-lg bg-surface-2/50">
+        <span class="text-xs text-gray-400">Permanence Risk</span>
+        {% if project.deforestation_risk == 'low' or project.deforestation_risk is none %}
+        <span class="text-xs text-brand-400 font-semibold">LOW</span>
+        {% elif project.deforestation_risk == 'medium' %}
+        <span class="text-xs text-yellow-400 font-semibold">MEDIUM</span>
+        {% else %}
+        <span class="text-xs text-red-400 font-semibold">HIGH</span>
+        {% endif %}
+      </div>
+      <div class="flex items-center justify-between p-3 rounded-lg bg-surface-2/50">
+        <span class="text-xs text-gray-400">Double-Count Check</span>
+        <span class="text-xs text-brand-400 font-semibold">CLEAR</span>
+      </div>
+      <div class="flex items-center justify-between p-3 rounded-lg bg-surface-2/50">
+        <span class="text-xs text-gray-400">Leakage Assessment</span>
+        <span class="text-xs text-brand-400 font-semibold">MINIMAL</span>
+      </div>
+      {% if project.ndvi_change is not none %}
+      <div class="flex items-center justify-between p-3 rounded-lg bg-surface-2/50">
+        <span class="text-xs text-gray-400">NDVI Change (12mo)</span>
+        <span class="text-xs {% if project.ndvi_change >= 0 %}text-brand-400{% else %}text-red-400{% endif %} font-semibold">
+          {% if project.ndvi_change >= 0 %}+{% endif %}{{ project.ndvi_change }}
+        </span>
+      </div>
+      {% endif %}
+    </div>
+    <p class="text-[10px] text-gray-600 mt-3">Last verified: {{ project.last_satellite_check[:10] }} · Verified by: {{ project.verified_by }}</p>
+  </div>
+
+  <!-- Credit Supply Chart -->
+  <div class="bg-surface-1 border border-gray-800 rounded-xl p-5">
+    <h3 class="text-sm font-semibold text-white mb-4">Credit Supply Breakdown</h3>
+    <canvas id="supplyChart" height="250"></canvas>
+    <div class="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-gray-800/50">
+      <div class="text-center">
+        <p class="text-lg font-bold text-brand-400">{{ "{:,}".format(project.credits_available) }}</p>
+        <p class="text-[10px] text-gray-500">Available</p>
+      </div>
+      <div class="text-center">
+        <p class="text-lg font-bold text-gray-400">{{ "{:,}".format(project.credits_retired) }}</p>
+        <p class="text-[10px] text-gray-500">Retired</p>
+      </div>
+      <div class="text-center">
+        <p class="text-lg font-bold text-gray-600">{{ "{:,}".format(project.total_credits - project.credits_available - project.credits_retired) }}</p>
+        <p class="text-[10px] text-gray-500">Reserved</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tags -->
+<div class="flex gap-2 mt-4">
+  {% for tag in project.tags %}
+  <span class="px-3 py-1 rounded-lg text-xs bg-surface-2 text-gray-400 font-medium border border-gray-800">{{ tag }}</span>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ctx = document.getElementById('supplyChart').getContext('2d');
+new Chart(ctx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Available', 'Retired', 'Reserved'],
+    datasets: [{
+      data: [
+        {{ project.credits_available }},
+        {{ project.credits_retired }},
+        {{ project.total_credits - project.credits_available - project.credits_retired }},
+      ],
+      backgroundColor: ['#10b981', '#6b7280', '#374151'],
+      borderColor: '#111827',
+      borderWidth: 3,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '70%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { color: '#9ca3af', font: { size: 10 }, padding: 12, usePointStyle: true, pointStyleWidth: 8 }
+      }
+    }
+  }
+});
+</script>
+{% endblock %}

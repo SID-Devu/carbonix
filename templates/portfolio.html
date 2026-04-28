@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}Portfolio{% endblock %}
+{% block page_title %}Portfolio{% endblock %}
+{% block page_subtitle %}Your carbon credit holdings and performance{% endblock %}
+
+{% block content %}
+<!-- Portfolio Summary -->
+<div class="grid grid-cols-4 gap-4 mb-8">
+  <div class="bg-surface-1 border border-gray-800 rounded-xl p-5">
+    <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Portfolio Value</p>
+    <p class="text-2xl font-bold text-white mt-1">${{ "{:,.0f}".format(total_value) }}</p>
+    <p class="text-xs mt-1 flex items-center gap-1 {% if total_gain >= 0 %}text-brand-400{% else %}text-red-400{% endif %}">
+      {% if total_gain >= 0 %}
+      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+      {% else %}
+      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+      {% endif %}
+      {% if total_gain_pct >= 0 %}+{% endif %}{{ "%.1f"|format(total_gain_pct) }}% all time
+    </p>
+  </div>
+  <div class="bg-surface-1 border border-gray-800 rounded-xl p-5">
+    <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Invested</p>
+    <p class="text-2xl font-bold text-white mt-1">${{ "{:,.0f}".format(total_invested) }}</p>
+    <p class="text-xs text-gray-500 mt-1">Across {{ holdings|length }} positions</p>
+  </div>
+  <div class="bg-surface-1 border border-gray-800 rounded-xl p-5">
+    <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Unrealized P&L</p>
+    <p class="text-2xl font-bold mt-1 {% if total_gain >= 0 %}text-brand-400{% else %}text-red-400{% endif %}">
+      {% if total_gain >= 0 %}+{% endif %}{{ "{:,.0f}".format(total_gain) }}
+    </p>
+    <p class="text-xs mt-1 {% if total_gain >= 0 %}text-brand-400{% else %}text-red-400{% endif %}">
+      {% if total_gain_pct >= 0 %}+{% endif %}{{ "%.1f"|format(total_gain_pct) }}% return
+    </p>
+  </div>
+  <div class="bg-surface-1 border border-gray-800 rounded-xl p-5">
+    <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Tons Held</p>
+    <p class="text-2xl font-bold text-white mt-1">{{ "{:,}".format(total_tons) }}</p>
+    <p class="text-xs text-gray-500 mt-1">tCO2e offset capacity</p>
+  </div>
+</div>
+
+<!-- Holdings + Allocation -->
+<div class="grid grid-cols-3 gap-6">
+  <!-- Holdings Table -->
+  <div class="col-span-2 bg-surface-1 border border-gray-800 rounded-xl overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-800">
+      <h3 class="text-sm font-semibold text-white">Holdings</h3>
+    </div>
+    <table class="w-full">
+      <thead>
+        <tr class="text-[10px] uppercase tracking-wider text-gray-500 bg-surface-2/30">
+          <th class="text-left px-5 py-2.5 font-medium">Project</th>
+          <th class="text-center px-3 py-2.5 font-medium">Rating</th>
+          <th class="text-right px-3 py-2.5 font-medium">Tons</th>
+          <th class="text-right px-3 py-2.5 font-medium">Avg Cost</th>
+          <th class="text-right px-3 py-2.5 font-medium">Current</th>
+          <th class="text-right px-3 py-2.5 font-medium">Value</th>
+          <th class="text-right px-5 py-2.5 font-medium">P&L</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-800/50">
+        {% for h in holdings %}
+        <tr class="hover:bg-surface-2/30 transition-colors">
+          <td class="px-5 py-4">
+            <a href="/project/{{ h.project.id }}" class="hover:text-brand-400 transition-colors">
+              <p class="text-sm font-medium text-gray-200">{{ h.project.name }}</p>
+              <p class="text-[10px] text-gray-500">{{ h.project.type }} · {{ h.project.country }}</p>
+            </a>
+          </td>
+          <td class="px-3 py-4 text-center">
+            <span class="rating-{{ h.project.rating|lower }} text-[10px] font-bold text-white px-2 py-0.5 rounded-md">{{ h.project.rating }}</span>
+          </td>
+          <td class="px-3 py-4 text-right text-sm text-gray-300 font-mono">{{ "{:,}".format(h.tons_held) }}</td>
+          <td class="px-3 py-4 text-right text-sm text-gray-400 font-mono">${{ "%.2f"|format(h.avg_price) }}</td>
+          <td class="px-3 py-4 text-right text-sm text-white font-semibold font-mono">${{ "%.2f"|format(h.current_price) }}</td>
+          <td class="px-3 py-4 text-right text-sm text-white font-semibold font-mono">${{ "{:,.0f}".format(h.current_value) }}</td>
+          <td class="px-5 py-4 text-right">
+            <p class="text-sm font-semibold font-mono {% if h.gain >= 0 %}text-brand-400{% else %}text-red-400{% endif %}">
+              {% if h.gain >= 0 %}+{% endif %}{{ "{:,.0f}".format(h.gain) }}
+            </p>
+            <p class="text-[10px] {% if h.gain_pct >= 0 %}text-brand-400{% else %}text-red-400{% endif %}">
+              {% if h.gain_pct >= 0 %}+{% endif %}{{ "%.1f"|format(h.gain_pct) }}%
+            </p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="border-t-2 border-gray-700 bg-surface-2/20">
+          <td class="px-5 py-3 text-sm font-semibold text-white" colspan="2">Total</td>
+          <td class="px-3 py-3 text-right text-sm font-semibold text-white font-mono">{{ "{:,}".format(total_tons) }}</td>
+          <td class="px-3 py-3"></td>
+          <td class="px-3 py-3"></td>
+          <td class="px-3 py-3 text-right text-sm font-bold text-white font-mono">${{ "{:,.0f}".format(total_value) }}</td>
+          <td class="px-5 py-3 text-right text-sm font-bold font-mono {% if total_gain >= 0 %}text-brand-400{% else %}text-red-400{% endif %}">
+            {% if total_gain >= 0 %}+{% endif %}{{ "{:,.0f}".format(total_gain) }}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- Right column -->
+  <div class="space-y-4">
+    <!-- Allocation Chart -->
+    <div class="bg-surface-1 border border-gray-800 rounded-xl p-5">
+      <h3 class="text-sm font-semibold text-white mb-4">Allocation by Value</h3>
+      <canvas id="allocationChart" height="200"></canvas>
+    </div>
+
+    <!-- Quality Mix -->
+    <div class="bg-surface-1 border border-gray-800 rounded-xl p-5">
+      <h3 class="text-sm font-semibold text-white mb-4">Quality Distribution</h3>
+      <div class="space-y-3">
+        {% set ratings = {} %}
+        {% for h in holdings %}
+          {% if h.project.rating in ratings %}
+            {% set _ = ratings.update({h.project.rating: ratings[h.project.rating] + h.current_value}) %}
+          {% else %}
+            {% set _ = ratings.update({h.project.rating: h.current_value}) %}
+          {% endif %}
+        {% endfor %}
+        {% for rating in ['AAA', 'AA', 'A', 'B'] %}
+        {% set val = 0 %}
+        {% for h in holdings %}
+          {% if h.project.rating == rating %}
+            {% set val = val + h.current_value %}
+          {% endif %}
+        {% endfor %}
+        {% if val > 0 %}
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="flex items-center gap-2">
+              <span class="rating-{{ rating|lower }} text-[9px] font-bold text-white px-1.5 py-0.5 rounded">{{ rating }}</span>
+              <span class="text-gray-400">{{ "{:.0f}".format(val / total_value * 100) }}%</span>
+            </span>
+            <span class="text-gray-500 font-mono">${{ "{:,.0f}".format(val) }}</span>
+          </div>
+          <div class="h-2 rounded-full bg-surface-3 overflow-hidden">
+            <div class="h-full rounded-full {% if rating == 'AAA' %}bg-emerald-500{% elif rating == 'AA' %}bg-teal-500{% elif rating == 'A' %}bg-blue-500{% else %}bg-amber-500{% endif %}" style="width: {{ (val / total_value * 100)|round }}%"></div>
+          </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Impact Summary -->
+    <div class="bg-surface-1 border border-gray-800 rounded-xl p-5">
+      <h3 class="text-sm font-semibold text-white mb-3">Environmental Impact</h3>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-400">CO2 Offset Capacity</span>
+          <span class="text-sm font-semibold text-brand-400">{{ "{:,}".format(total_tons) }} tCO2e</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-400">Equivalent Cars/Year</span>
+          <span class="text-sm font-semibold text-white">{{ "{:,}".format((total_tons / 4.6)|round|int) }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-400">Equivalent Flights (NYC→LON)</span>
+          <span class="text-sm font-semibold text-white">{{ "{:,}".format((total_tons / 0.9)|round|int) }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-400">Projects Supported</span>
+          <span class="text-sm font-semibold text-white">{{ holdings|length }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Retire Credits -->
+    <div class="bg-surface-1 border border-brand-600/30 rounded-xl p-5">
+      <h3 class="text-sm font-semibold text-white mb-2">Retire Credits</h3>
+      <p class="text-xs text-gray-500 mb-3">Permanently retire credits to claim your carbon offset. Retired credits are registered on-chain and cannot be traded.</p>
+      <button class="w-full py-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-lg transition-colors">
+        Retire Credits
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ctx = document.getElementById('allocationChart').getContext('2d');
+new Chart(ctx, {
+  type: 'doughnut',
+  data: {
+    labels: [{% for h in holdings %}'{{ h.project.name|truncate(20) }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    datasets: [{
+      data: [{% for h in holdings %}{{ h.current_value|round }}{% if not loop.last %},{% endif %}{% endfor %}],
+      backgroundColor: ['#10b981', '#a855f7', '#3b82f6', '#14b8a6', '#f59e0b'],
+      borderColor: '#111827',
+      borderWidth: 3,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '60%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { color: '#9ca3af', font: { size: 9 }, padding: 8, usePointStyle: true, pointStyleWidth: 8 }
+      },
+      tooltip: {
+        backgroundColor: '#1f2937',
+        borderColor: '#374151',
+        borderWidth: 1,
+        titleColor: '#f9fafb',
+        bodyColor: '#d1d5db',
+        callbacks: { label: ctx => ' $' + ctx.parsed.toLocaleString() }
+      }
+    }
+  }
+});
+</script>
+{% endblock %}

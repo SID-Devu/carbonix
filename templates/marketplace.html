@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% block title %}Marketplace{% endblock %}
+{% block page_title %}Marketplace{% endblock %}
+{% block page_subtitle %}Buy and sell AI-verified carbon credits{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-3 gap-6">
+  <!-- Left: Order Book -->
+  <div class="col-span-2 space-y-6">
+    <!-- Available Credits Table -->
+    <div class="bg-surface-1 border border-gray-800 rounded-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-white">Available Credits</h3>
+        <div class="flex gap-2">
+          <select id="sort-select" onchange="sortTable()" class="text-xs bg-surface-2 border border-gray-700 rounded-lg px-2.5 py-1.5 text-gray-400 focus:outline-none focus:border-brand-500">
+            <option value="rating">Sort by Rating</option>
+            <option value="price-low">Price: Low → High</option>
+            <option value="price-high">Price: High → Low</option>
+            <option value="volume">Volume</option>
+          </select>
+        </div>
+      </div>
+      <table class="w-full" id="credits-table">
+        <thead>
+          <tr class="text-[10px] uppercase tracking-wider text-gray-500 bg-surface-2/30">
+            <th class="text-left px-5 py-2.5 font-medium">Project</th>
+            <th class="text-center px-3 py-2.5 font-medium">Rating</th>
+            <th class="text-right px-3 py-2.5 font-medium">Price/tCO2</th>
+            <th class="text-right px-3 py-2.5 font-medium">Available</th>
+            <th class="text-center px-3 py-2.5 font-medium">Satellite</th>
+            <th class="text-center px-5 py-2.5 font-medium">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800/50">
+          {% for p in projects|sort(attribute='score', reverse=true) %}
+          <tr class="hover:bg-surface-2/30 transition-colors credit-row" data-rating="{{ p.score }}" data-price="{{ p.price_per_ton }}" data-volume="{{ p.credits_available }}">
+            <td class="px-5 py-3">
+              <a href="/project/{{ p.id }}" class="hover:text-brand-400 transition-colors">
+                <p class="text-sm font-medium text-gray-200">{{ p.name }}</p>
+                <p class="text-[10px] text-gray-500">{{ p.type }} · {{ p.country }}</p>
+              </a>
+            </td>
+            <td class="px-3 py-3 text-center">
+              <span class="rating-{{ p.rating|lower }} text-[10px] font-bold text-white px-2 py-0.5 rounded-md">{{ p.rating }}</span>
+            </td>
+            <td class="px-3 py-3 text-right">
+              <span class="text-sm font-semibold text-white font-mono">${{ "%.2f"|format(p.price_per_ton) }}</span>
+            </td>
+            <td class="px-3 py-3 text-right">
+              <span class="text-sm text-gray-300 font-mono">{{ "{:,}".format(p.credits_available) }}</span>
+            </td>
+            <td class="px-3 py-3 text-center">
+              {% if p.satellite_status == 'verified' %}
+              <span class="inline-flex items-center gap-1 text-[10px] text-brand-400 font-medium">
+                <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>Verified
+              </span>
+              {% elif p.satellite_status == 'flagged' %}
+              <span class="inline-flex items-center gap-1 text-[10px] text-yellow-400 font-medium">
+                <span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>Flagged
+              </span>
+              {% else %}
+              <span class="inline-flex items-center gap-1 text-[10px] text-orange-400 font-medium">
+                <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>Review
+              </span>
+              {% endif %}
+            </td>
+            <td class="px-5 py-3 text-center">
+              <button onclick="openBuy('{{ p.id }}', '{{ p.name }}', {{ p.price_per_ton }}, {{ p.credits_available }})" class="px-3 py-1.5 text-[10px] font-semibold bg-brand-600 hover:bg-brand-500 text-white rounded-lg transition-colors">
+                Buy
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Recent Trades -->
+    <div class="bg-surface-1 border border-gray-800 rounded-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-800">
+        <h3 class="text-sm font-semibold text-white">Recent Trades</h3>
+      </div>
+      <table class="w-full">
+        <thead>
+          <tr class="text-[10px] uppercase tracking-wider text-gray-500 bg-surface-2/30">
+            <th class="text-left px-5 py-2.5 font-medium">Buyer</th>
+            <th class="text-left px-3 py-2.5 font-medium">Project</th>
+            <th class="text-center px-3 py-2.5 font-medium">Rating</th>
+            <th class="text-right px-3 py-2.5 font-medium">Tons</th>
+            <th class="text-right px-3 py-2.5 font-medium">$/tCO2</th>
+            <th class="text-right px-3 py-2.5 font-medium">Total</th>
+            <th class="text-right px-5 py-2.5 font-medium">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800/50">
+          {% for t in transactions %}
+          <tr class="hover:bg-surface-2/30 transition-colors">
+            <td class="px-5 py-3 text-sm text-gray-300 font-medium">{{ t.buyer }}</td>
+            <td class="px-3 py-3 text-xs text-gray-400 max-w-[160px] truncate">{{ t.project_name }}</td>
+            <td class="px-3 py-3 text-center">
+              <span class="rating-{{ t.rating|lower }} text-[10px] font-bold text-white px-1.5 py-0.5 rounded">{{ t.rating }}</span>
+            </td>
+            <td class="px-3 py-3 text-sm text-gray-300 text-right font-mono">{{ "{:,}".format(t.tons) }}</td>
+            <td class="px-3 py-3 text-sm text-gray-300 text-right font-mono">${{ "%.2f"|format(t.price_per_ton) }}</td>
+            <td class="px-3 py-3 text-sm text-white text-right font-semibold font-mono">${{ "{:,.0f}".format(t.total_value) }}</td>
+            <td class="px-5 py-3 text-right">
+              {% if t.status == 'completed' %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-brand-600/15 text-brand-400">Done</span>
+              {% elif t.status == 'verified' %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-600/15 text-blue-400">Verified</span>
+              {% else %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-yellow-600/15 text-yellow-400">Pending</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Right: Buy Panel -->
+  <div class="space-y-4">
+    <div class="bg-surface-1 border border-gray-800 rounded-xl p-5 sticky top-20" id="buy-panel">
+      <h3 class="text-sm font-semibold text-white mb-4">Purchase Credits</h3>
+      <div id="buy-form-empty" class="text-center py-8">
+        <svg class="w-10 h-10 text-gray-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/></svg>
+        <p class="text-xs text-gray-500">Select a project to buy credits</p>
+      </div>
+      <div id="buy-form-active" class="hidden space-y-4">
+        <div class="p-3 rounded-lg bg-surface-2">
+          <p class="text-sm font-medium text-white" id="buy-project-name"></p>
+          <p class="text-xs text-gray-500 mt-0.5" id="buy-project-meta"></p>
+        </div>
+        <div>
+          <label class="block text-[10px] uppercase tracking-wider text-gray-500 mb-1.5 font-medium">Quantity (tCO2)</label>
+          <input type="number" id="buy-quantity" min="1" value="1000" class="w-full bg-surface-2 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500 font-mono" oninput="updateTotal()">
+        </div>
+        <div>
+          <label class="block text-[10px] uppercase tracking-wider text-gray-500 mb-1.5 font-medium">Price per tCO2</label>
+          <input type="text" id="buy-price" readonly class="w-full bg-surface-2/50 border border-gray-700/50 rounded-lg px-3 py-2 text-sm text-gray-400 font-mono">
+        </div>
+        <div class="pt-3 border-t border-gray-800">
+          <div class="flex justify-between mb-1">
+            <span class="text-xs text-gray-500">Subtotal</span>
+            <span class="text-xs text-gray-300 font-mono" id="buy-subtotal">$0</span>
+          </div>
+          <div class="flex justify-between mb-1">
+            <span class="text-xs text-gray-500">Platform Fee (3%)</span>
+            <span class="text-xs text-gray-300 font-mono" id="buy-fee">$0</span>
+          </div>
+          <div class="flex justify-between mt-2 pt-2 border-t border-gray-800">
+            <span class="text-sm font-semibold text-white">Total</span>
+            <span class="text-sm font-bold text-brand-400 font-mono" id="buy-total">$0</span>
+          </div>
+        </div>
+        <button onclick="executeBuy()" class="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-lg transition-colors">
+          Confirm Purchase
+        </button>
+        <p class="text-[10px] text-gray-600 text-center">Credits are AI-verified and blockchain-registered</p>
+      </div>
+    </div>
+
+    <!-- Market Summary -->
+    <div class="bg-surface-1 border border-gray-800 rounded-xl p-5">
+      <h3 class="text-sm font-semibold text-white mb-3">Price Range by Type</h3>
+      <div class="space-y-3">
+        {% set types = {'Forest Conservation': 'emerald', 'Renewable Energy': 'teal', 'Wetland Restoration': 'blue', 'Carbon Removal': 'purple', 'Blue Carbon': 'cyan'} %}
+        {% for type_name, color in types.items() %}
+        {% set type_projects = projects|selectattr('type','eq', type_name)|list %}
+        {% if type_projects %}
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-gray-400">{{ type_name }}</span>
+            <span class="text-gray-500">
+              ${{ "%.0f"|format(type_projects|map(attribute='price_per_ton')|min) }} — ${{ "%.0f"|format(type_projects|map(attribute='price_per_ton')|max) }}
+            </span>
+          </div>
+          <div class="h-1.5 rounded-full bg-surface-3 overflow-hidden">
+            <div class="h-full rounded-full bg-{{ color }}-500" style="width: {{ (type_projects|map(attribute='price_per_ton')|max / 420 * 100)|round }}%"></div>
+          </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Success Toast -->
+<div id="toast" class="fixed bottom-6 right-6 bg-brand-600 text-white px-5 py-3 rounded-xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-2">
+  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+  <span class="text-sm font-medium" id="toast-msg">Purchase submitted!</span>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentProject = null;
+
+window.openBuy = function(id, name, price, available) {
+  currentProject = { id, name, price, available };
+  document.getElementById('buy-form-empty').classList.add('hidden');
+  document.getElementById('buy-form-active').classList.remove('hidden');
+  document.getElementById('buy-project-name').textContent = name;
+  document.getElementById('buy-project-meta').textContent = available.toLocaleString() + ' tCO2 available';
+  document.getElementById('buy-price').value = '$' + price.toFixed(2);
+  updateTotal();
+};
+
+window.updateTotal = function() {
+  if (!currentProject) return;
+  const qty = parseInt(document.getElementById('buy-quantity').value) || 0;
+  const subtotal = qty * currentProject.price;
+  const fee = subtotal * 0.03;
+  document.getElementById('buy-subtotal').textContent = '$' + subtotal.toLocaleString(undefined, {maximumFractionDigits: 0});
+  document.getElementById('buy-fee').textContent = '$' + fee.toLocaleString(undefined, {maximumFractionDigits: 0});
+  document.getElementById('buy-total').textContent = '$' + (subtotal + fee).toLocaleString(undefined, {maximumFractionDigits: 0});
+};
+
+window.executeBuy = function() {
+  const toast = document.getElementById('toast');
+  const qty = document.getElementById('buy-quantity').value;
+  document.getElementById('toast-msg').textContent = `Purchased ${parseInt(qty).toLocaleString()} tCO2 from ${currentProject.name}`;
+  toast.classList.remove('translate-y-20', 'opacity-0');
+  setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+};
+
+window.sortTable = function() {
+  const val = document.getElementById('sort-select').value;
+  const rows = [...document.querySelectorAll('.credit-row')];
+  const tbody = rows[0]?.parentNode;
+  if (!tbody) return;
+  rows.sort((a, b) => {
+    if (val === 'rating') return parseFloat(b.dataset.rating) - parseFloat(a.dataset.rating);
+    if (val === 'price-low') return parseFloat(a.dataset.price) - parseFloat(b.dataset.price);
+    if (val === 'price-high') return parseFloat(b.dataset.price) - parseFloat(a.dataset.price);
+    if (val === 'volume') return parseFloat(b.dataset.volume) - parseFloat(a.dataset.volume);
+  });
+  rows.forEach(r => tbody.appendChild(r));
+};
+</script>
+{% endblock %}

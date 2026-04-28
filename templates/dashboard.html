@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Real-time carbon credit market intelligence{% endblock %}
+
+{% block content %}
+<!-- Stats Grid -->
+<div class="grid grid-cols-4 gap-4 mb-8">
+  <div class="bg-surface-1 border border-gray-800 rounded-xl p-5">
+    <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">30-Day Volume</p>
+    <p class="text-2xl font-bold text-white mt-1">${{ "{:,.0f}".format(stats.total_volume_30d) }}</p>
+    <p class="text-xs text-brand-400 mt-1 flex items-center gap-1">
+      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+      +23.4% vs last month
+    </p>
+  </div>
+  <div class="bg-surface-1 border border-gray-800 rounded-xl p-5">
+    <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Credits Traded</p>
+    <p class="text-2xl font-bold text-white mt-1">{{ "{:,}".format(stats.total_tons_30d) }} tCO2</p>
+    <p class="text-xs text-brand-400 mt-1 flex items-center gap-1">
+      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+      +18.7% vs last month
+    </p>
+  </div>
+  <div class="bg-surface-1 border border-gray-800 rounded-xl p-5">
+    <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Verified Projects</p>
+    <p class="text-2xl font-bold text-white mt-1">{{ stats.verified_projects }} <span class="text-sm text-gray-500">/ {{ stats.active_projects }}</span></p>
+    <p class="text-xs text-yellow-400 mt-1">{{ stats.flagged_projects }} under review</p>
+  </div>
+  <div class="bg-surface-1 border border-gray-800 rounded-xl p-5">
+    <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Price</p>
+    <p class="text-2xl font-bold text-white mt-1">${{ stats.avg_price }}/tCO2</p>
+    <p class="text-xs text-gray-500 mt-1">Across all project types</p>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="grid grid-cols-3 gap-4 mb-8">
+  <div class="col-span-2 bg-surface-1 border border-gray-800 rounded-xl p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-semibold text-white">Price Trends (12 Months)</h3>
+      <div class="flex gap-2" id="chart-filters">
+        <button onclick="toggleSeries('Forest Conservation')" class="chart-btn px-2.5 py-1 text-[10px] rounded-md bg-brand-600/20 text-brand-400 border border-brand-600/30 font-medium">Forest</button>
+        <button onclick="toggleSeries('Renewable Energy')" class="chart-btn px-2.5 py-1 text-[10px] rounded-md bg-teal-600/20 text-teal-400 border border-teal-600/30 font-medium">Renewable</button>
+        <button onclick="toggleSeries('Carbon Removal')" class="chart-btn px-2.5 py-1 text-[10px] rounded-md bg-purple-600/20 text-purple-400 border border-purple-600/30 font-medium">CDR</button>
+        <button onclick="toggleSeries('Wetland Restoration')" class="chart-btn px-2.5 py-1 text-[10px] rounded-md bg-blue-600/20 text-blue-400 border border-blue-600/30 font-medium">Wetland</button>
+        <button onclick="toggleSeries('Blue Carbon')" class="chart-btn px-2.5 py-1 text-[10px] rounded-md bg-cyan-600/20 text-cyan-400 border border-cyan-600/30 font-medium">Blue Carbon</button>
+      </div>
+    </div>
+    <canvas id="priceChart" height="200"></canvas>
+  </div>
+  <div class="bg-surface-1 border border-gray-800 rounded-xl p-5">
+    <h3 class="text-sm font-semibold text-white mb-4">Credits by Type</h3>
+    <canvas id="typeChart" height="220"></canvas>
+  </div>
+</div>
+
+<!-- Two columns: Project ratings + Recent transactions -->
+<div class="grid grid-cols-5 gap-4">
+  <!-- Project Quality Overview -->
+  <div class="col-span-2 bg-surface-1 border border-gray-800 rounded-xl p-5">
+    <h3 class="text-sm font-semibold text-white mb-4">Project Quality Ratings</h3>
+    <div class="space-y-2">
+      {% for p in projects %}
+      <a href="/project/{{ p.id }}" class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-2 transition-colors group">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="rating-{{ p.rating|lower }} text-[10px] font-bold text-white px-2 py-0.5 rounded-md flex-shrink-0">{{ p.rating }}</span>
+          <div class="min-w-0">
+            <p class="text-sm text-gray-200 font-medium truncate group-hover:text-white transition-colors">{{ p.name }}</p>
+            <p class="text-[10px] text-gray-500">{{ p.type }} · {{ p.country }}</p>
+          </div>
+        </div>
+        <div class="text-right flex-shrink-0 ml-3">
+          <p class="text-sm font-semibold text-white">${{ "%.2f"|format(p.price_per_ton) }}</p>
+          <div class="flex items-center gap-1 justify-end">
+            {% if p.satellite_status == 'verified' %}
+            <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
+            <span class="text-[10px] text-brand-400">Verified</span>
+            {% elif p.satellite_status == 'flagged' %}
+            <span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+            <span class="text-[10px] text-yellow-400">Flagged</span>
+            {% else %}
+            <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+            <span class="text-[10px] text-orange-400">Review</span>
+            {% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Recent Transactions -->
+  <div class="col-span-3 bg-surface-1 border border-gray-800 rounded-xl p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-semibold text-white">Recent Transactions</h3>
+      <a href="/marketplace" class="text-xs text-brand-400 hover:text-brand-300 transition-colors">View all →</a>
+    </div>
+    <table class="w-full">
+      <thead>
+        <tr class="text-[10px] uppercase tracking-wider text-gray-500 border-b border-gray-800">
+          <th class="text-left pb-3 font-medium">Buyer</th>
+          <th class="text-left pb-3 font-medium">Project</th>
+          <th class="text-right pb-3 font-medium">Tons</th>
+          <th class="text-right pb-3 font-medium">Price</th>
+          <th class="text-right pb-3 font-medium">Total</th>
+          <th class="text-right pb-3 font-medium">Status</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-800/50">
+        {% for t in transactions %}
+        <tr class="hover:bg-surface-2/50 transition-colors">
+          <td class="py-3 text-sm text-gray-300 font-medium">{{ t.buyer }}</td>
+          <td class="py-3 text-xs text-gray-400 max-w-[180px] truncate">{{ t.project_name }}</td>
+          <td class="py-3 text-sm text-gray-300 text-right font-mono">{{ "{:,}".format(t.tons) }}</td>
+          <td class="py-3 text-sm text-gray-300 text-right font-mono">${{ "%.2f"|format(t.price_per_ton) }}</td>
+          <td class="py-3 text-sm text-white text-right font-semibold font-mono">${{ "{:,.0f}".format(t.total_value) }}</td>
+          <td class="py-3 text-right">
+            {% if t.status == 'completed' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-brand-600/15 text-brand-400">Completed</span>
+            {% elif t.status == 'verified' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-600/15 text-blue-400">Verified</span>
+            {% else %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-yellow-600/15 text-yellow-400">Pending</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+fetch('/api/prices').then(r => r.json()).then(data => {
+  const types = [...new Set(data.map(d => d.type))];
+  const colors = {
+    'Forest Conservation': '#10b981',
+    'Renewable Energy': '#14b8a6',
+    'Carbon Removal': '#a855f7',
+    'Wetland Restoration': '#3b82f6',
+    'Blue Carbon': '#06b6d4',
+  };
+
+  const datasets = types.map(type => {
+    const points = data.filter(d => d.type === type);
+    const sampled = points.filter((_, i) => i % 7 === 0);
+    return {
+      label: type,
+      data: sampled.map(d => ({ x: d.date, y: d.price })),
+      borderColor: colors[type],
+      backgroundColor: colors[type] + '15',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      tension: 0.4,
+      fill: type === 'Carbon Removal' ? false : true,
+    };
+  });
+
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  window.priceChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1f2937',
+          borderColor: '#374151',
+          borderWidth: 1,
+          titleColor: '#f9fafb',
+          bodyColor: '#d1d5db',
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: { label: ctx => `${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}` }
+        }
+      },
+      scales: {
+        x: {
+          type: 'category',
+          grid: { color: '#1f293720' },
+          ticks: { color: '#6b7280', font: { size: 10 }, maxTicksLimit: 12 },
+        },
+        y: {
+          grid: { color: '#1f293740' },
+          ticks: { color: '#6b7280', font: { size: 10 }, callback: v => '$' + v },
+        }
+      }
+    }
+  });
+});
+
+window.toggleSeries = function(name) {
+  const chart = window.priceChartInstance;
+  if (!chart) return;
+  const idx = chart.data.datasets.findIndex(d => d.label === name);
+  if (idx >= 0) {
+    chart.data.datasets[idx].hidden = !chart.data.datasets[idx].hidden;
+    chart.update();
+  }
+};
+
+// Donut chart
+const typeCtx = document.getElementById('typeChart').getContext('2d');
+new Chart(typeCtx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Forest', 'Renewable', 'Wetland', 'CDR', 'Blue Carbon'],
+    datasets: [{
+      data: [
+        {{ projects|selectattr('type','eq','Forest Conservation')|map(attribute='credits_available')|sum }},
+        {{ projects|selectattr('type','eq','Renewable Energy')|map(attribute='credits_available')|sum }},
+        {{ projects|selectattr('type','eq','Wetland Restoration')|map(attribute='credits_available')|sum }},
+        {{ projects|selectattr('type','eq','Carbon Removal')|map(attribute='credits_available')|sum }},
+        {{ projects|selectattr('type','eq','Blue Carbon')|map(attribute='credits_available')|sum }},
+      ],
+      backgroundColor: ['#10b981','#14b8a6','#3b82f6','#a855f7','#06b6d4'],
+      borderColor: '#111827',
+      borderWidth: 3,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '65%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { color: '#9ca3af', font: { size: 10 }, padding: 12, usePointStyle: true, pointStyleWidth: 8 }
+      }
+    }
+  }
+});
+</script>
+{% endblock %}

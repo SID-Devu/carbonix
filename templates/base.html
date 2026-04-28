@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Carbonix{% endblock %} — AI-Verified Carbon Credits</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50:'#ecfdf5',100:'#d1fae5',200:'#a7f3d0',300:'#6ee7b7',400:'#34d399',500:'#10b981',600:'#059669',700:'#047857',800:'#065f46',900:'#064e3b' },
+            surface: { 0:'#0a0f1a', 1:'#111827', 2:'#1f2937', 3:'#374151' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+    .rating-aaa { background: linear-gradient(135deg, #059669, #10b981); }
+    .rating-aa { background: linear-gradient(135deg, #0d9488, #14b8a6); }
+    .rating-a { background: linear-gradient(135deg, #2561e3, #3b82f6); }
+    .rating-b { background: linear-gradient(135deg, #d97706, #f59e0b); }
+    .rating-c { background: linear-gradient(135deg, #dc2626, #ef4444); }
+    .fade-in { animation: fadeIn 0.3s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+  </style>
+</head>
+<body class="h-full bg-surface-0 text-gray-100 dark">
+  <div class="flex h-full">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-surface-1 border-r border-gray-800 flex flex-col fixed h-full z-30">
+      <div class="p-5 border-b border-gray-800">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-brand-600 flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold text-white tracking-tight">Carbonix</h1>
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest font-medium">AI-Verified Credits</p>
+          </div>
+        </div>
+      </div>
+      <nav class="flex-1 p-3 space-y-1">
+        <a href="/" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {% if request.path == '/' %}bg-brand-600/15 text-brand-400{% else %}text-gray-400 hover:text-gray-200 hover:bg-surface-2{% endif %}">
+          <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 12a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z"/></svg>
+          Dashboard
+        </a>
+        <a href="/projects" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {% if '/projects' in request.path %}bg-brand-600/15 text-brand-400{% else %}text-gray-400 hover:text-gray-200 hover:bg-surface-2{% endif %}">
+          <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+          Projects
+        </a>
+        <a href="/marketplace" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {% if request.path == '/marketplace' %}bg-brand-600/15 text-brand-400{% else %}text-gray-400 hover:text-gray-200 hover:bg-surface-2{% endif %}">
+          <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/></svg>
+          Marketplace
+        </a>
+        <a href="/portfolio" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {% if request.path == '/portfolio' %}bg-brand-600/15 text-brand-400{% else %}text-gray-400 hover:text-gray-200 hover:bg-surface-2{% endif %}">
+          <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+          Portfolio
+        </a>
+      </nav>
+      <div class="p-4 border-t border-gray-800">
+        <div class="flex items-center gap-2 text-xs text-gray-500">
+          <span class="w-2 h-2 rounded-full bg-brand-500 pulse-dot"></span>
+          All systems verified
+        </div>
+        <p class="text-[10px] text-gray-600 mt-1">Last satellite scan: 2 min ago</p>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 ml-64 overflow-y-auto scrollbar-thin">
+      <header class="sticky top-0 z-20 bg-surface-0/80 backdrop-blur-xl border-b border-gray-800/50">
+        <div class="px-8 py-4 flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-semibold text-white">{% block page_title %}Dashboard{% endblock %}</h2>
+            <p class="text-xs text-gray-500 mt-0.5">{% block page_subtitle %}Real-time carbon credit intelligence{% endblock %}</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-2 text-xs text-gray-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
+              8 projects monitored
+            </div>
+            <div class="w-8 h-8 rounded-full bg-brand-700 flex items-center justify-center text-sm font-semibold text-brand-200">C</div>
+          </div>
+        </div>
+      </header>
+      <div class="p-8 fade-in">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
